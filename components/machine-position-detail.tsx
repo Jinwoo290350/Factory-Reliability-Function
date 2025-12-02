@@ -1,28 +1,53 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, Edit, Trash2 } from "lucide-react"
+import { ChevronLeft, Edit, Trash2, Plus, Image } from "lucide-react"
 import type { Component, FailureItem, MachinePosition } from "./dashboard"
 
 interface MachinePositionDetailProps {
   component: Component
   failureItem: FailureItem
   onBack: () => void
+  onNavigateToMachinePicture?: (position: MachinePosition) => void
 }
 
-export function MachinePositionDetail({ component, failureItem, onBack }: MachinePositionDetailProps) {
-  const [positions, setPositions] = useState<MachinePosition[]>([
-    {
-      id: "pos-1",
-      positionName: "Typical Vibration Inspection Right",
-      description:
-        "Forced vibration: A forced vibration occurs when an alternating force disrupts a mechanical or structural system. An excellent example of forced vibration is a building's vibration during an earthquake — the building's frequency remains stable until the earthquake strikes and its energy undergoes a forced change.",
-      createdDate: "Jan 16, 2025",
-    },
-  ])
+export function MachinePositionDetail({ component, failureItem, onBack, onNavigateToMachinePicture }: MachinePositionDetailProps) {
+  const [positions, setPositions] = useState<MachinePosition[]>([])
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingPosition, setEditingPosition] = useState<MachinePosition | null>(null)
 
   const handleDelete = (id: string) => {
+    if (!confirm("Are you sure you want to delete this position?")) return
     setPositions(positions.filter((p) => p.id !== id))
+  }
+
+  const handleAddPosition = (newPosition: Omit<MachinePosition, "id" | "createdDate">) => {
+    const position: MachinePosition = {
+      id: `pos-${Date.now()}`,
+      ...newPosition,
+      createdDate: new Date().toLocaleDateString(),
+    }
+    setPositions([...positions, position])
+    setShowAddModal(false)
+  }
+
+  const handleEditPosition = (updatedData: Omit<MachinePosition, "id" | "createdDate">) => {
+    if (!editingPosition) return
+    setPositions(
+      positions.map((p) =>
+        p.id === editingPosition.id
+          ? { ...p, positionName: updatedData.positionName, description: updatedData.description }
+          : p
+      )
+    )
+    setShowEditModal(false)
+    setEditingPosition(null)
+  }
+
+  const handleEdit = (position: MachinePosition) => {
+    setEditingPosition(position)
+    setShowEditModal(true)
   }
 
   return (
@@ -70,41 +95,159 @@ export function MachinePositionDetail({ component, failureItem, onBack }: Machin
         </h1>
       </div>
 
+      <div className="mb-6">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-all shadow-sm"
+        >
+          <Plus className="h-4 w-4" />
+          New Position
+        </button>
+      </div>
+
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-secondary">
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Position Name</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Description</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Created Date</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Tools</th>
-            </tr>
-          </thead>
-          <tbody>
-            {positions.map((position) => (
-              <tr key={position.id} className="border-b border-border hover:bg-secondary/50">
-                <td className="px-6 py-4 text-foreground">{position.positionName}</td>
-                <td className="px-6 py-4 text-foreground text-xs max-w-md truncate">{position.description}</td>
-                <td className="px-6 py-4 text-foreground">{position.createdDate}</td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-1 px-3 py-1 rounded bg-secondary text-foreground text-xs font-medium hover:bg-secondary/80">
-                      <Edit className="h-3 w-3" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(position.id)}
-                      className="flex items-center gap-1 px-3 py-1 rounded bg-destructive text-destructive-foreground text-xs font-medium hover:bg-destructive/90"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Delete
-                    </button>
-                  </div>
-                </td>
+        {positions.length === 0 ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <p className="text-muted-foreground text-base font-medium">No positions yet.</p>
+              <p className="text-muted-foreground text-sm mt-1">Click "New Position" to add one.</p>
+            </div>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-secondary">
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Position Name</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Description</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Created Date</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Tools</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {positions.map((position) => (
+                <tr key={position.id} className="border-b border-border hover:bg-secondary/50">
+                  <td className="px-6 py-4 text-foreground">{position.positionName}</td>
+                  <td className="px-6 py-4 text-foreground text-xs max-w-md">{position.description}</td>
+                  <td className="px-6 py-4 text-foreground">{position.createdDate}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEdit(position)}
+                        className="flex items-center gap-1 px-3 py-1 rounded bg-secondary text-foreground text-xs font-medium hover:bg-secondary/80"
+                      >
+                        <Edit className="h-3 w-3" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(position.id)}
+                        className="flex items-center gap-1 px-3 py-1 rounded bg-destructive text-destructive-foreground text-xs font-medium hover:bg-destructive/90"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Delete
+                      </button>
+                      <button
+                        onClick={() => onNavigateToMachinePicture?.(position)}
+                        className="flex items-center gap-1 px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
+                      >
+                        <Image className="h-3 w-3" />
+                        Machine Picture
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {showAddModal && (
+        <PositionModal
+          title="Add New Position"
+          onSave={handleAddPosition}
+          onClose={() => setShowAddModal(false)}
+        />
+      )}
+
+      {showEditModal && editingPosition && (
+        <PositionModal
+          title="Edit Position"
+          initialData={editingPosition}
+          onSave={handleEditPosition}
+          onClose={() => {
+            setShowEditModal(false)
+            setEditingPosition(null)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// Position Modal Component
+interface PositionModalProps {
+  title: string
+  initialData?: MachinePosition
+  onSave: (data: Omit<MachinePosition, "id" | "createdDate">) => void
+  onClose: () => void
+}
+
+function PositionModal({ title, initialData, onSave, onClose }: PositionModalProps) {
+  const [formData, setFormData] = useState({
+    positionName: initialData?.positionName || "",
+    description: initialData?.description || "",
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSave(formData)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-card rounded-lg border border-border p-6 w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl font-bold text-foreground mb-4">{title}</h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">Position Name</label>
+            <input
+              type="text"
+              value={formData.positionName}
+              onChange={(e) => setFormData({ ...formData, positionName: e.target.value })}
+              className="w-full rounded-lg border border-border bg-input px-3 py-2 text-foreground"
+              required
+              placeholder="e.g., Typical Vibration Inspection Right"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">Position Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full rounded-lg border border-border bg-input px-3 py-2 text-foreground min-h-32"
+              required
+              placeholder="Enter position description..."
+            />
+          </div>
+
+          <div className="flex gap-3 justify-end pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground font-semibold hover:bg-secondary/80 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all"
+            >
+              Save
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

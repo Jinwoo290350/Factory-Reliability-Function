@@ -9,6 +9,7 @@ import { FailureItemDetail } from "./failure-item-detail"
 import { FailureModelDetail } from "./failure-model-detail"
 import { RiskMatrixDetail } from "./risk-matrix-detail"
 import { MachinePositionDetail } from "./machine-position-detail"
+import { MachinePictureDetail } from "./machine-picture-detail"
 import { MachineList } from "./machine-list"
 
 export interface ComponentType {
@@ -74,11 +75,12 @@ export function Dashboard() {
   const [machines, setMachines] = useState<Machine[]>([])
 
   const [currentPage, setCurrentPage] = useState<
-    "main" | "failureItems" | "failureModels" | "riskMatrix" | "machinePosition" | "manageMachines"
+    "main" | "failureItems" | "failureModels" | "riskMatrix" | "machinePosition" | "machinePicture" | "manageMachines"
   >("main")
   const [selectedComponent, setSelectedComponent] = useState<Component | null>(null)
   const [selectedFailureItem, setSelectedFailureItem] = useState<FailureItem | null>(null)
   const [selectedFailureMode, setSelectedFailureMode] = useState<FailureMode | null>(null)
+  const [selectedPosition, setSelectedPosition] = useState<MachinePosition | null>(null)
 
   const handleSelectComponent = (component: Component) => {
     setSelectedComponent(component)
@@ -102,6 +104,11 @@ export function Dashboard() {
     setCurrentPage("machinePosition")
   }
 
+  const navigateToMachinePicture = (position: MachinePosition) => {
+    setSelectedPosition(position)
+    setCurrentPage("machinePicture")
+  }
+
   const navigateToManageMachines = () => {
     setCurrentPage("manageMachines")
   }
@@ -119,6 +126,9 @@ export function Dashboard() {
     } else if (currentPage === "machinePosition") {
       setCurrentPage("failureModels")
       setSelectedFailureMode(null)
+    } else if (currentPage === "machinePicture") {
+      setCurrentPage("machinePosition")
+      setSelectedPosition(null)
     } else if (currentPage === "manageMachines") {
       setCurrentPage("main")
       setActiveNav("componentLists")
@@ -168,7 +178,21 @@ export function Dashboard() {
         )
       case "machinePosition":
         return (
-          <MachinePositionDetail component={selectedComponent!} failureItem={selectedFailureItem!} onBack={goBack} />
+          <MachinePositionDetail
+            component={selectedComponent!}
+            failureItem={selectedFailureItem!}
+            onBack={goBack}
+            onNavigateToMachinePicture={navigateToMachinePicture}
+          />
+        )
+      case "machinePicture":
+        return (
+          <MachinePictureDetail
+            component={selectedComponent!}
+            failureItem={selectedFailureItem!}
+            position={selectedPosition!}
+            onBack={goBack}
+          />
         )
     }
   }

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, ChevronLeft } from "lucide-react"
 import type { Component, FailureItem, FailureMode } from "./dashboard"
 import { WeibullGraphPopup } from "./weibull-graph-popup"
+import { getComponents, type Component as ApiComponent } from "@/lib/api"
 
 interface FailureModelDetailProps {
   component: Component
@@ -26,27 +27,81 @@ export function FailureModelDetail({
   const [showCount, setShowCount] = useState(10)
   const [showGraph, setShowGraph] = useState(false)
   const [selectedMode, setSelectedMode] = useState<FailureMode | null>(null)
+  const [failureModes, setFailureModes] = useState<FailureMode[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const failureModes: FailureMode[] = [
-    {
-      id: "fm-1",
-      failureModeId: "fm-11-001-020",
-      failureMode: "VIB",
-      note: "SD",
-      mtHours: "31.79",
-      reliability: "0.999999978184",
-      createdDate: "Sep 26, 2022",
-    },
-    {
-      id: "fm-2",
-      failureModeId: "fm-11-001-021",
-      failureMode: "TEMPERATURE",
-      note: "SD",
-      mtHours: "45.23",
-      reliability: "0.999999970000",
-      createdDate: "Sep 26, 2022",
-    },
-  ]
+  // Fetch failure modes from database
+  useEffect(() => {
+    const fetchFailureModes = async () => {
+      try {
+        setLoading(true)
+        // Get all components
+        const allComponents = await getComponents()
+
+        // Filter components matching: same component_name AND same sub_component (failure item name)
+        const matchingComponents = allComponents.filter(
+          (c) =>
+            c.component_name === component.componentName &&
+            c.sub_component === failureItem.failureItemName
+        )
+
+        // Group by failure_mode
+        const failureModeMap = new Map<string, ApiComponent[]>()
+
+        for (const comp of matchingComponents) {
+          if (comp.failure_mode && comp.failure_hours) {
+            const existing = failureModeMap.get(comp.failure_mode) || []
+            existing.push(comp)
+            failureModeMap.set(comp.failure_mode, existing)
+          }
+        }
+
+        // Create failure mode records with calculations
+        const modes: FailureMode[] = []
+        let sequenceNumber = 1
+
+        failureModeMap.forEach((components, failureModeName) => {
+          // Calculate MT, Hours, Standard Reliability from failure_hours
+          const failureHoursArray = components.map(c => c.failure_hours!).filter(h => h > 0)
+
+          if (failureHoursArray.length > 0) {
+            // Calculate Mean Time (MTBF)
+            const mtHours = failureHoursArray.reduce((sum, h) => sum + h, 0) / failureHoursArray.length
+
+            // Calculate Standard Reliability (simplified: e^(-1/MTBF))
+            // Assuming 1 hour operation time
+            const reliability = Math.exp(-1 / mtHours)
+
+            // Generate failure mode ID: fm-11-001-001
+            const failureModeId = `${failureItem.failureItemId.replace('fi-', 'fm-')}-${sequenceNumber.toString().padStart(3, '0')}`
+
+            // Use first component's date
+            const firstComp = components[0]
+
+            modes.push({
+              id: `fm-${component.id}-${failureModeName}`,
+              failureModeId: failureModeId,
+              failureMode: failureModeName,
+              note: "",  // Empty as requested
+              mtHours: mtHours.toFixed(2),
+              reliability: reliability.toFixed(12),
+              createdDate: new Date(firstComp.created_at).toLocaleDateString(),
+            })
+
+            sequenceNumber++
+          }
+        })
+
+        setFailureModes(modes)
+      } catch (error) {
+        console.error("Failed to fetch failure modes:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFailureModes()
+  }, [component, failureItem])
 
   const filteredData = failureModes.filter(
     (mode) =>
@@ -136,59 +191,97 @@ export function FailureModelDetail({
       </div>
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-secondary">
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Failure Mode ID</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Failure Mode</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Note</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">MTHours</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Standard Reliability</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Created Date</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Tools</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayedData.map((mode) => (
-              <tr key={mode.id} className="border-b border-border hover:bg-secondary/50">
-                <td className="px-6 py-4 text-foreground">{mode.failureModeId}</td>
-                <td className="px-6 py-4 text-foreground">{mode.failureMode}</td>
-                <td className="px-6 py-4 text-foreground">{mode.note}</td>
-                <td className="px-6 py-4 text-foreground">{mode.mtHours}</td>
-                <td className="px-6 py-4 text-foreground">{mode.reliability}</td>
-                <td className="px-6 py-4 text-foreground">{mode.createdDate}</td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleGraphClick(mode)}
-                      className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700"
-                    >
-                      Graph
-                    </button>
-                    <button
-                      onClick={() => {
-                        onSelectFailureMode(mode)
-                        onNavigateToRiskMatrix()
-                      }}
-                      className="px-3 py-1 rounded bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/90"
-                    >
-                      Risk Matrix
-                    </button>
-                    <button
-                      onClick={() => {
-                        onSelectFailureMode(mode)
-                        onNavigateToMachinePosition()
-                      }}
-                      className="px-3 py-1 rounded bg-secondary text-foreground text-xs font-medium hover:bg-secondary/80"
-                    >
-                      Machine Position
-                    </button>
-                  </div>
-                </td>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <p className="text-muted-foreground text-base font-medium">Loading failure modes...</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-secondary">
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Failure Mode ID</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Failure Mode</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Note</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">MT Hours</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Standard Reliability</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Created Date</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Calculate Mode</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Tools</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {displayedData.map((mode) => {
+                // Check if data is ready for calculations (has MT hours and reliability)
+                const isActive = mode.mtHours && mode.reliability && parseFloat(mode.mtHours) > 0
+
+                return (
+                  <tr key={mode.id} className="border-b border-border hover:bg-secondary/50">
+                    <td className="px-6 py-4 text-foreground">{mode.failureModeId}</td>
+                    <td className="px-6 py-4 text-foreground">{mode.failureMode}</td>
+                    <td className="px-6 py-4 text-foreground">{mode.note || "-"}</td>
+                    <td className="px-6 py-4 text-foreground">{mode.mtHours}</td>
+                    <td className="px-6 py-4 text-foreground">{mode.reliability}</td>
+                    <td className="px-6 py-4 text-foreground">{mode.createdDate}</td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-3 py-1 rounded text-xs font-semibold ${
+                          isActive
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                        }`}
+                      >
+                        {isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleGraphClick(mode)}
+                          disabled={!isActive}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                            isActive
+                              ? "bg-blue-600 text-white hover:bg-blue-700"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+                          }`}
+                        >
+                          Graph
+                        </button>
+                        <button
+                          onClick={() => {
+                            onSelectFailureMode(mode)
+                            onNavigateToRiskMatrix()
+                          }}
+                          disabled={!isActive}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                            isActive
+                              ? "bg-accent text-accent-foreground hover:bg-accent/90"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+                          }`}
+                        >
+                          Risk Matrix
+                        </button>
+                        <button
+                          onClick={() => {
+                            onSelectFailureMode(mode)
+                            onNavigateToMachinePosition()
+                          }}
+                          disabled={!isActive}
+                          className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                            isActive
+                              ? "bg-secondary text-foreground hover:bg-secondary/80"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+                          }`}
+                        >
+                          Machine Position
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {failureModes.length > 0 && (
