@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  username      String
+  companyName   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  machines      Machine[]
+  components    Component[]
+  csvUploads    CsvUpload[]
+  reliabilityResults ReliabilityResult[]
+}
+
+model Machine {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sequence    Int?
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  components  Component[]
+
+  @@index([userId])
+}
+
+model Component {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  machineId       String?
+  machine         Machine? @relation(fields: [machineId], references: [id], onDelete: SetNull)
+  machineName     String
+  componentName   String
+  subComponent    String?
+  failureMode     String?
+  failureHours    Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reliabilityResults ReliabilityResult[]
+
+  @@index([userId])
+  @@index([machineId])
+  @@index([machineName])
+}
+
+model CsvUpload {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename      String
+  fileSize      Int?
+  recordsCount  Int?
+  status        String   @default("pending") // pending, processing, completed, failed
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+  processedAt   DateTime?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model ReliabilityResult {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  componentId   String?
+  component     Component? @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  analysisType  String   // weibull, risk_matrix, etc.
+  results       String   // JSON string for SQLite
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([componentId])
+}

@@ -6,6 +6,7 @@ import { useState } from "react"
 import { X } from "lucide-react"
 import type { Component } from "./dashboard"
 import type { Machine } from "./machine-list"
+import { createComponent } from "@/lib/api"
 
 interface AddComponentModalProps {
   onAdd: (component: Component) => void
@@ -18,28 +19,65 @@ export function AddComponentModal({ onAdd, onClose, machines }: AddComponentModa
     machineId: "",
     componentId: "",
     componentName: "",
-    createdDate: new Date().toISOString().split("T")[0],
   })
+  const [submitting, setSubmitting] = useState(false)
+
+  // Common component IDs and names from the CSV data
+  const componentOptions = [
+    { id: '1.1 Gear pump', name: 'Gear pump' },
+    { id: '1.2 Single screw extruder', name: 'Single screw extruder' },
+    { id: '1.3 Gearbox', name: 'Gearbox' },
+    { id: '1.4 Electric Cabinet', name: 'Electric Cabinet' },
+    { id: '1.5 Conveyor system', name: 'Conveyor system' },
+    { id: '1.6 Cutter assembly', name: 'Cutter assembly' },
+    { id: '1.7 Others', name: 'Others' },
+  ]
 
   const selectedMachine = machines.find((m) => m.id === formData.machineId)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // When Component ID is selected, auto-fill Component Name
+  const handleComponentIdChange = (componentId: string) => {
+    const selected = componentOptions.find(opt => opt.id === componentId)
+    setFormData({
+      ...formData,
+      componentId: componentId,
+      componentName: selected?.name || ""
+    })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (formData.machineId && formData.componentId && formData.componentName) {
-      const newComponent: Component = {
-        id: `comp-${Date.now()}`,
-        type: selectedMachine?.name || "",
-        componentId: formData.componentId,
-        componentName: formData.componentName,
-        createdDate: formData.createdDate,
+    if (formData.componentId && formData.componentName) {
+      setSubmitting(true)
+      try {
+        // Send component_id and component_name to backend
+        const apiComponent = await createComponent({
+          component_id: formData.componentId,
+          component_name: formData.componentName,
+          machine_name: selectedMachine?.name || "Unassigned",
+          machine_id: formData.machineId || null,
+        })
+
+        const newComponent: Component = {
+          id: apiComponent.id,
+          type: apiComponent.machine_name,
+          componentId: apiComponent.component_id || apiComponent.id,
+          componentName: apiComponent.component_name,
+          createdDate: new Date(apiComponent.created_at).toLocaleDateString(),
+        }
+
+        onAdd(newComponent)
+        setFormData({
+          machineId: "",
+          componentId: "",
+          componentName: "",
+        })
+      } catch (error) {
+        console.error("Failed to create component:", error)
+        alert("Failed to create component. Please try again.")
+      } finally {
+        setSubmitting(false)
       }
-      onAdd(newComponent)
-      setFormData({
-        machineId: "",
-        componentId: "",
-        componentName: "",
-        createdDate: new Date().toISOString().split("T")[0],
-      })
     }
   }
 
@@ -55,14 +93,44 @@ export function AddComponentModal({ onAdd, onClose, machines }: AddComponentModa
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-2.5">Machine Name</label>
+            <label className="block text-sm font-semibold text-foreground mb-2.5">Component ID</label>
+            <select
+              value={formData.componentId}
+              onChange={(e) => handleComponentIdChange(e.target.value)}
+              className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-foreground text-sm font-medium focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              required
+            >
+              <option value="">Select Component ID</option>
+              {componentOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.id}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-2.5">Component Name</label>
+            <input
+              type="text"
+              value={formData.componentName}
+              className="w-full rounded-lg border border-border bg-muted px-4 py-2.5 text-muted-foreground text-sm font-medium cursor-not-allowed"
+              disabled
+              placeholder="Auto-filled from Component ID"
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Component Name is auto-filled when you select Component ID
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-2.5">Machine</label>
             <select
               value={formData.machineId}
               onChange={(e) => setFormData({ ...formData, machineId: e.target.value })}
               className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-foreground text-sm font-medium focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-              required
             >
-              <option value="">Select a machine</option>
+              <option value="">Unassigned</option>
               {machines.map((machine) => (
                 <option key={machine.id} value={machine.id}>
                   {machine.name}
@@ -71,52 +139,19 @@ export function AddComponentModal({ onAdd, onClose, machines }: AddComponentModa
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-2.5">Component ID</label>
-            <input
-              type="text"
-              value={formData.componentId}
-              onChange={(e) => setFormData({ ...formData, componentId: e.target.value })}
-              placeholder="Enter component ID"
-              className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-foreground text-sm font-medium placeholder-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-2.5">Component Name</label>
-            <input
-              type="text"
-              value={formData.componentName}
-              onChange={(e) => setFormData({ ...formData, componentName: e.target.value })}
-              placeholder="Enter component name"
-              className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-foreground text-sm font-medium placeholder-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-2.5">Created Date</label>
-            <input
-              type="date"
-              value={formData.createdDate}
-              onChange={(e) => setFormData({ ...formData, createdDate: e.target.value })}
-              className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-foreground text-sm font-medium focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-              required
-            />
-          </div>
-
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all shadow-sm"
+              disabled={submitting}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Component
+              {submitting ? "Adding..." : "Add Component"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground font-semibold hover:bg-secondary/80 transition-all"
+              disabled={submitting}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground font-semibold hover:bg-secondary/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>

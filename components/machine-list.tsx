@@ -1,13 +1,15 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { Search, Trash2, Edit, Plus } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, Trash2, Edit, Plus, ArrowLeft } from "lucide-react"
 import { AddMachineModal } from "./add-machine-modal"
+import { getMachines, deleteMachine, updateMachine, type Machine as ApiMachine } from "@/lib/api"
 
 export interface Machine {
   id: string
   sequence: number
+  componentId: string  // Component ID format like "1.1", "1.2"
   name: string
   createdDate: string
 }
@@ -15,43 +17,87 @@ export interface Machine {
 interface MachineListProps {
   data: Machine[]
   setData: React.Dispatch<React.SetStateAction<Machine[]>>
+  onBack?: () => void
 }
 
-export function MachineList({ data, setData }: MachineListProps) {
+// Convert API machine to UI machine format
+function convertApiMachine(apiMachine: ApiMachine): Machine {
+  return {
+    id: apiMachine.id,
+    sequence: apiMachine.sequence_number,
+    componentId: `1.${apiMachine.sequence_number}`,  // Generate Component ID from sequence
+    name: apiMachine.name,
+    createdDate: new Date(apiMachine.created_at).toLocaleDateString(),
+  }
+}
+
+export function MachineList({ data, setData, onBack }: MachineListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [showCount, setShowCount] = useState(10)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  // Fetch machines from API on mount
+  useEffect(() => {
+    fetchMachines()
+  }, [])
+
+  const fetchMachines = async () => {
+    try {
+      setLoading(true)
+      setError("")
+      const apiMachines = await getMachines()
+      const uiMachines = apiMachines.map(convertApiMachine)
+      setData(uiMachines)
+    } catch (err) {
+      console.error("Failed to fetch machines:", err)
+      setError("Failed to load machines. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleEdit = (machine: Machine) => {
     setEditingId(machine.id)
     setEditName(machine.name)
   }
 
-  const handleSaveEdit = (id: string) => {
-    setData(
-      data.map((m) =>
-        m.id === id ? { ...m, name: editName, createdDate: new Date().toISOString().split("T")[0] } : m,
-      ),
-    )
-    setEditingId(null)
-    setEditName("")
+  const handleSaveEdit = async (id: string) => {
+    try {
+      await updateMachine(id, { name: editName })
+      setData(
+        data.map((m) =>
+          m.id === id ? { ...m, name: editName, createdDate: new Date().toLocaleDateString() } : m,
+        ),
+      )
+      setEditingId(null)
+      setEditName("")
+    } catch (err) {
+      console.error("Failed to update machine:", err)
+      alert("Failed to update machine. Please try again.")
+    }
   }
 
-  const handleDelete = (id: string) => {
-    setData(data.filter((m) => m.id !== id))
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this machine?")) return
+
+    try {
+      await deleteMachine(id)
+      setData(data.filter((m) => m.id !== id))
+    } catch (err) {
+      console.error("Failed to delete machine:", err)
+      alert("Failed to delete machine. Please try again.")
+    }
   }
 
   const handleAddMachine = (name: string) => {
-    const newMachine: Machine = {
-      id: `machine-${Date.now()}`,
-      sequence: data.length + 1,
-      name: name,
-      createdDate: new Date().toISOString().split("T")[0],
-    }
-    setData([...data, newMachine])
+    // This will be handled by the modal
     setShowAddModal(false)
+    // Refresh to get latest data
+    fetchMachines()
   }
 
   const filteredData = data.filter((machine) => machine.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -61,6 +107,15 @@ export function MachineList({ data, setData }: MachineListProps) {
   return (
     <div className="flex-1 p-8">
       <div className="mb-8">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 mb-4 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="text-sm font-medium">Back to Component Lists</span>
+          </button>
+        )}
         <div className="flex items-center gap-2 mb-4">
           <span className="text-sm text-muted-foreground">Manage Machine</span>
           <span className="text-sm text-muted-foreground">/</span>
@@ -70,6 +125,12 @@ export function MachineList({ data, setData }: MachineListProps) {
         </div>
         <h1 className="text-4xl font-bold text-foreground">Manage Machine</h1>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -108,7 +169,11 @@ export function MachineList({ data, setData }: MachineListProps) {
       </div>
 
       <div className="rounded-lg border border-border bg-card overflow-hidden shadow-sm">
-        {data.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <p className="text-muted-foreground text-base font-medium">Loading machines...</p>
+          </div>
+        ) : data.length === 0 ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <p className="text-muted-foreground text-base font-medium">No machines yet.</p>
@@ -119,7 +184,7 @@ export function MachineList({ data, setData }: MachineListProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-secondary">
-                <th className="px-6 py-4 text-left font-semibold text-foreground">Machine Sequence</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Component ID</th>
                 <th className="px-6 py-4 text-left font-semibold text-foreground">Machine Name</th>
                 <th className="px-6 py-4 text-left font-semibold text-foreground">Created Date</th>
                 <th className="px-6 py-4 text-left font-semibold text-foreground">Tools</th>
@@ -128,7 +193,7 @@ export function MachineList({ data, setData }: MachineListProps) {
             <tbody>
               {displayedData.map((machine) => (
                 <tr key={machine.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
-                  <td className="px-6 py-4 text-foreground font-medium">{machine.sequence}</td>
+                  <td className="px-6 py-4 text-foreground font-medium">{machine.componentId}</td>
                   <td className="px-6 py-4">
                     {editingId === machine.id ? (
                       <input

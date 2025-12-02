@@ -13,24 +13,50 @@ export function FailureList({ data, onSelectComponent }: FailureListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [showCount, setShowCount] = useState(10)
 
-  const groupedByType = data.reduce(
+  // Group components by machine name
+  const groupedByMachine = data.reduce(
     (acc, component) => {
-      if (!acc[component.type]) {
-        acc[component.type] = []
+      const machineName = component.type || "Unknown Machine"
+      if (!acc[machineName]) {
+        acc[machineName] = []
       }
-      acc[component.type].push(component)
+      acc[machineName].push(component)
       return acc
     },
     {} as Record<string, Component[]>,
   )
 
+  // Filter data
   const filteredData = data.filter(
     (record) =>
+      record.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.componentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.componentName.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const displayedData = filteredData.slice(0, showCount)
+  // Group filtered data by machine and deduplicate by component name
+  const filteredGrouped = filteredData.reduce(
+    (acc, component) => {
+      const machineName = component.type || "Unknown Machine"
+      if (!acc[machineName]) {
+        acc[machineName] = []
+      }
+
+      // Check if component with same name already exists in this machine group
+      const existingIndex = acc[machineName].findIndex(c => c.componentName === component.componentName)
+
+      if (existingIndex === -1) {
+        // New component, add it
+        acc[machineName].push(component)
+      }
+      // If exists, skip it (deduplicate)
+
+      return acc
+    },
+    {} as Record<string, Component[]>,
+  )
+
+  const machineNames = Object.keys(filteredGrouped)
 
   return (
     <div className="flex-1 p-8">
@@ -74,52 +100,69 @@ export function FailureList({ data, onSelectComponent }: FailureListProps) {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="space-y-6">
         {data.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-12 rounded-lg border border-border bg-card">
             <p className="text-muted-foreground">Upload CSV file to view failure lists</p>
           </div>
+        ) : machineNames.length === 0 ? (
+          <div className="flex items-center justify-center py-12 rounded-lg border border-border bg-card">
+            <p className="text-muted-foreground">No results found for "{searchTerm}"</p>
+          </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-secondary">
-                <th className="px-6 py-4 text-left font-semibold text-foreground">Type</th>
-                <th className="px-6 py-4 text-left font-semibold text-foreground">Component ID</th>
-                <th className="px-6 py-4 text-left font-semibold text-foreground">Component Name</th>
-                <th className="px-6 py-4 text-left font-semibold text-foreground">Created Date</th>
-                <th className="px-6 py-4 text-left font-semibold text-foreground">Tools</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayedData.map((component) => (
-                <tr key={component.id} className="border-b border-border hover:bg-secondary/50">
-                  <td className="px-6 py-4 font-bold text-foreground">{component.type}</td>
-                  <td className="px-6 py-4 text-foreground">{component.componentId}</td>
-                  <td className="px-6 py-4 text-foreground">{component.componentName}</td>
-                  <td className="px-6 py-4 text-foreground">{component.createdDate}</td>
-                  <td className="px-6 py-4 text-foreground">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => onSelectComponent(component)}
-                        className="px-3 py-1 rounded bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/90"
-                      >
-                        Failure Item
-                      </button>
-                      <button className="px-3 py-1 rounded bg-secondary text-foreground text-xs font-medium hover:bg-secondary/80">
-                        Functions
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          machineNames.map((machineName) => {
+            const components = filteredGrouped[machineName]
+            return (
+              <div key={machineName} className="rounded-lg border border-border bg-card overflow-hidden">
+                {/* Machine Header */}
+                <div className="bg-primary px-6 py-3">
+                  <h2 className="text-lg font-bold text-primary-foreground">{machineName}</h2>
+                </div>
+
+                {/* Components Table */}
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-secondary">
+                      <th className="px-6 py-3 text-left font-semibold text-foreground">Component ID</th>
+                      <th className="px-6 py-3 text-left font-semibold text-foreground">Component Name</th>
+                      <th className="px-6 py-3 text-left font-semibold text-foreground">Created Date</th>
+                      <th className="px-6 py-3 text-left font-semibold text-foreground">Tools</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {components.map((component) => (
+                      <tr key={component.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
+                        <td className="py-3 pl-12 pr-6">
+                          <span className="text-foreground font-medium">{component.componentId || "-"}</span>
+                        </td>
+                        <td className="px-6 py-3 text-foreground font-medium">{component.componentName}</td>
+                        <td className="px-6 py-3 text-foreground">{component.createdDate}</td>
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => onSelectComponent(component)}
+                              className="px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-semibold hover:bg-accent/90 transition-all"
+                            >
+                              Failure Item
+                            </button>
+                            <button className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-secondary/80 transition-all">
+                              Functions
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          })
         )}
       </div>
 
       {data.length > 0 && (
-        <div className="mt-4 text-sm text-muted-foreground">
-          Showing {displayedData.length} of {filteredData.length} entries
+        <div className="mt-4 text-sm text-muted-foreground font-medium">
+          Showing {filteredData.length} components from {machineNames.length} machines
         </div>
       )}
     </div>

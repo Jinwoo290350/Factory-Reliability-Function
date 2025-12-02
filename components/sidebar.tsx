@@ -8,16 +8,15 @@ interface SidebarProps {
 export function Sidebar({ activeNav, setActiveNav }: SidebarProps) {
   const menuItems = [
     { id: "manage", label: "MANAGE", disabled: true },
-    { id: "machines", label: "Manage Machine", disabled: false },
-    { id: "failures", label: "Failure Lists", disabled: false },
-    { id: "components", label: "Component Lists", disabled: false },
+    { id: "componentLists", label: "Component Lists", disabled: false },
+    { id: "failureLists", label: "Failure Lists", disabled: false },
   ]
 
   return (
     <aside className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col p-6">
       {/* Logo/Header Area */}
       <div className="mb-12">
-        <div className="h-10 w-10 bg-primary rounded-lg" />
+        <h2 className="text-xl font-bold text-foreground">Factory System</h2>
       </div>
 
       {/* Navigation Menu */}

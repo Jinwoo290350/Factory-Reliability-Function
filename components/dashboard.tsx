@@ -69,12 +69,12 @@ export interface Machine {
 }
 
 export function Dashboard() {
-  const [activeNav, setActiveNav] = useState<string | null>(null)
+  const [activeNav, setActiveNav] = useState<string | null>("componentLists")
   const [components, setComponents] = useState<Component[]>([])
   const [machines, setMachines] = useState<Machine[]>([])
 
   const [currentPage, setCurrentPage] = useState<
-    "main" | "failureItems" | "failureModels" | "riskMatrix" | "machinePosition"
+    "main" | "failureItems" | "failureModels" | "riskMatrix" | "machinePosition" | "manageMachines"
   >("main")
   const [selectedComponent, setSelectedComponent] = useState<Component | null>(null)
   const [selectedFailureItem, setSelectedFailureItem] = useState<FailureItem | null>(null)
@@ -102,6 +102,10 @@ export function Dashboard() {
     setCurrentPage("machinePosition")
   }
 
+  const navigateToManageMachines = () => {
+    setCurrentPage("manageMachines")
+  }
+
   const goBack = () => {
     if (currentPage === "failureItems") {
       setCurrentPage("main")
@@ -115,6 +119,9 @@ export function Dashboard() {
     } else if (currentPage === "machinePosition") {
       setCurrentPage("failureModels")
       setSelectedFailureMode(null)
+    } else if (currentPage === "manageMachines") {
+      setCurrentPage("main")
+      setActiveNav("componentLists")
     }
   }
 
@@ -122,19 +129,15 @@ export function Dashboard() {
     switch (currentPage) {
       case "main":
         switch (activeNav) {
-          case "machines":
-            return <MachineList data={machines} setData={setMachines} />
-          case "failures":
+          case "componentLists":
+            return <ComponentList data={components} setData={setComponents} machines={machines} onNavigateToMachines={navigateToManageMachines} />
+          case "failureLists":
             return <FailureList data={components} onSelectComponent={handleSelectComponent} />
-          case "components":
-            return <ComponentList data={components} setData={setComponents} machines={machines} />
           default:
-            return (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-muted-foreground text-lg">Select an option from the menu</p>
-              </div>
-            )
+            return <ComponentList data={components} setData={setComponents} machines={machines} onNavigateToMachines={navigateToManageMachines} />
         }
+      case "manageMachines":
+        return <MachineList data={machines} setData={setMachines} onBack={goBack} />
       case "failureItems":
         return (
           <FailureItemDetail
@@ -170,9 +173,14 @@ export function Dashboard() {
     }
   }
 
+  const handleUploadSuccess = () => {
+    // Refresh components and machines after successful CSV upload
+    window.location.reload()
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background">
-      <DevBar components={components} setComponents={setComponents} />
+      <DevBar components={components} setComponents={setComponents} onUploadSuccess={handleUploadSuccess} />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar activeNav={activeNav} setActiveNav={setActiveNav} />

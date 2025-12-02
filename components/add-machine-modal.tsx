@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { X } from "lucide-react"
+import { createMachine } from "@/lib/api"
 
 interface AddMachineModalProps {
   onAdd: (name: string) => void
@@ -11,12 +12,22 @@ interface AddMachineModalProps {
 
 export function AddMachineModal({ onAdd, onClose }: AddMachineModalProps) {
   const [machineeName, setMachineName] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (machineeName.trim()) {
-      onAdd(machineeName)
-      setMachineName("")
+      setSubmitting(true)
+      try {
+        await createMachine({ name: machineeName })
+        onAdd(machineeName)
+        setMachineName("")
+      } catch (error) {
+        console.error("Failed to create machine:", error)
+        alert("Failed to create machine. Please try again.")
+      } finally {
+        setSubmitting(false)
+      }
     }
   }
 
@@ -47,14 +58,16 @@ export function AddMachineModal({ onAdd, onClose }: AddMachineModalProps) {
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all shadow-sm"
+              disabled={submitting}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Machine
+              {submitting ? "Adding..." : "Add Machine"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground font-semibold hover:bg-secondary/80 transition-all"
+              disabled={submitting}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-secondary text-secondary-foreground font-semibold hover:bg-secondary/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>

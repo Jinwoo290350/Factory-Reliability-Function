@@ -1,0 +1,15 @@
+node_modules
+# Keep environment variables out of version control
+.env
+.claude
+/lib/generated/prisma
+/.env.local
+/.env.development.local
+/.env.test.local
+/.env.production.local
+.DS_Store
+/build
+/dist
+/.next
+/out
+.vscode 

@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, ChevronLeft } from "lucide-react"
 import type { Component, FailureItem } from "./dashboard"
+import { getComponents, type Component as ApiComponent } from "@/lib/api"
 
 interface FailureItemDetailProps {
   component: Component
@@ -13,37 +14,79 @@ interface FailureItemDetailProps {
 export function FailureItemDetail({ component, onSelectFailureItem, onBack }: FailureItemDetailProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [showCount, setShowCount] = useState(10)
+  const [failureItems, setFailureItems] = useState<FailureItem[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const failureItems: FailureItem[] = [
-    {
-      id: `fi-${component.componentId}-1`,
-      failureItemId: `fi-11-001`,
-      failureItemName: "Actuating device",
-      componentId: component.componentId,
-      createdDate: "Sep 26, 2022",
-    },
-    {
-      id: `fi-${component.componentId}-2`,
-      failureItemId: `fi-11-002`,
-      failureItemName: "Antisurge system",
-      componentId: component.componentId,
-      createdDate: "Sep 26, 2022",
-    },
-    {
-      id: `fi-${component.componentId}-3`,
-      failureItemId: `fi-11-003`,
-      failureItemName: "Balance piston",
-      componentId: component.componentId,
-      createdDate: "Sep 26, 2022",
-    },
-    {
-      id: `fi-${component.componentId}-4`,
-      failureItemId: `fi-11-004`,
-      failureItemName: "Cabling & junction boxes",
-      componentId: component.componentId,
-      createdDate: "Sep 26, 2022",
-    },
-  ]
+  // Fetch all components with the same component_name and group by sub_component
+  useEffect(() => {
+    const fetchFailureItems = async () => {
+      try {
+        setLoading(true)
+        // Get all components
+        const allComponents = await getComponents()
+
+        // Filter components with the same component_name
+        const matchingComponents = allComponents.filter(
+          (c) => c.component_name === component.componentName
+        )
+
+        // Group by sub_component (SupComponent)
+        const subComponentMap = new Map<string, ApiComponent[]>()
+
+        for (const comp of matchingComponents) {
+          if (comp.sub_component) {
+            const existing = subComponentMap.get(comp.sub_component) || []
+            existing.push(comp)
+            subComponentMap.set(comp.sub_component, existing)
+          }
+        }
+
+        // Create failure items from unique sub_components with sequential IDs
+        const items: FailureItem[] = []
+
+        // Extract numeric part from component ID (e.g., "1.3 Gearbox" -> "13")
+        const componentIdNumeric = component.componentId.split(' ')[0].replace(/\./g, '')
+
+        let sequenceNumber = 1
+        subComponentMap.forEach((components, subComponentName) => {
+          // Use the first component with this sub_component for dates
+          const firstComp = components[0]
+
+          // Generate failure item ID: fi-13-001, fi-13-002, etc.
+          const failureItemId = `fi-${componentIdNumeric}-${sequenceNumber.toString().padStart(3, '0')}`
+
+          items.push({
+            id: `fi-${component.id}-${subComponentName}`,
+            failureItemId: failureItemId,
+            failureItemName: subComponentName,
+            componentId: component.componentId,
+            createdDate: new Date(firstComp.created_at).toLocaleDateString(),
+          })
+
+          sequenceNumber++
+        })
+
+        // If no sub-components found, show a message
+        if (items.length === 0) {
+          items.push({
+            id: `fi-${component.id}-empty`,
+            failureItemId: component.componentId,
+            failureItemName: "No sub-components found",
+            componentId: component.componentId,
+            createdDate: component.createdDate,
+          })
+        }
+
+        setFailureItems(items)
+      } catch (error) {
+        console.error("Failed to fetch failure items:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFailureItems()
+  }, [component])
 
   const filteredData = failureItems.filter(
     (item) =>
@@ -120,33 +163,39 @@ export function FailureItemDetail({ component, onSelectFailureItem, onBack }: Fa
       </div>
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-secondary">
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Failure Item ID</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Failure Item Name</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Created Date</th>
-              <th className="px-6 py-4 text-left font-semibold text-foreground">Tools</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayedData.map((item) => (
-              <tr key={item.id} className="border-b border-border hover:bg-secondary/50">
-                <td className="px-6 py-4 text-foreground">{item.failureItemId}</td>
-                <td className="px-6 py-4 text-foreground">{item.failureItemName}</td>
-                <td className="px-6 py-4 text-foreground">{item.createdDate}</td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => onSelectFailureItem(item)}
-                    className="px-3 py-1 rounded bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/90"
-                  >
-                    Failure Model & Parameters
-                  </button>
-                </td>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <p className="text-muted-foreground text-base font-medium">Loading failure items...</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-secondary">
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Failure Item ID</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Failure Item Name</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Created Date</th>
+                <th className="px-6 py-4 text-left font-semibold text-foreground">Tools</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {displayedData.map((item) => (
+                <tr key={item.id} className="border-b border-border hover:bg-secondary/50">
+                  <td className="px-6 py-4 text-foreground">{item.failureItemId}</td>
+                  <td className="px-6 py-4 text-foreground">{item.failureItemName}</td>
+                  <td className="px-6 py-4 text-foreground">{item.createdDate}</td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => onSelectFailureItem(item)}
+                      className="px-3 py-1 rounded bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/90"
+                    >
+                      Failure Model & Parameters
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {failureItems.length > 0 && (

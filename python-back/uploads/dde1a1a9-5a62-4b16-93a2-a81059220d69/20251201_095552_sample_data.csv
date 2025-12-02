@@ -1,0 +1,21 @@
+Machine,Component,SupComponent,Failure mode,Failure hours
+Compressor-1,Motor,Bearing,Wear,8760
+Compressor-1,Motor,Winding,Overheating,4380
+Compressor-1,Valve,Seal,Leakage,2190
+Compressor-2,Motor,Bearing,Fatigue,7300
+Compressor-2,Pump,Impeller,Corrosion,5840
+Pump-1,Motor,Bearing,Wear,6570
+Pump-1,Impeller,Blade,Crack,3650
+Pump-1,Seal,Gasket,Deterioration,1825
+Pump-2,Motor,Winding,Burn out,4015
+Pump-2,Valve,Spring,Fatigue,2920
+Conveyor-1,Belt,Surface,Tear,4380
+Conveyor-1,Motor,Bearing,Misalignment,5110
+Conveyor-1,Roller,Shaft,Bend,6205
+Mixer-1,Blade,Edge,Chipping,2555
+Mixer-1,Motor,Bearing,Wear,7665
+Mixer-1,Gearbox,Gear,Tooth breakage,9125
+Heater-1,Element,Coil,Burn out,3285
+Heater-1,Thermostat,Sensor,Drift,5475
+Cooler-1,Fan,Blade,Imbalance,4745
+Cooler-1,Compressor,Valve,Sticking,3650

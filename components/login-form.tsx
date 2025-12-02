@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { login, ApiError } from "@/lib/api"
 
 interface LoginFormProps {
   onLoginSuccess: () => void
@@ -13,15 +14,27 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false)
+    setError("")
+
+    try {
+      const response = await login({ email, password })
+      console.log("Login successful:", response.user)
       onLoginSuccess()
-    }, 1000)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message)
+      } else {
+        setError("An unexpected error occurred. Please try again.")
+      }
+      console.error("Login error:", err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -66,6 +79,13 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                 className="h-10"
               />
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
 
             {/* Submit Button */}
             <Button
