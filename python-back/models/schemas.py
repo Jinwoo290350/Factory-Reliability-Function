@@ -138,3 +138,49 @@ class ReliabilityResultResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ============= Machine Position Schemas =============
+
+class MachinePositionCreate(BaseModel):
+    failure_item_id: str
+    position_name: str
+    description: Optional[str] = None
+
+class MachinePositionUpdate(BaseModel):
+    position_name: Optional[str] = None
+    description: Optional[str] = None
+
+class MachinePositionResponse(BaseModel):
+    id: str
+    user_id: str
+    failure_item_id: str
+    position_name: str
+    description: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# ============= Machine Picture Schemas =============
+
+class MachinePictureCreate(BaseModel):
+    machine_position_id: str
+    direction: str
+    picture_url: str  # Base64 encoded or file path
+
+class MachinePictureUpdate(BaseModel):
+    direction: Optional[str] = None
+    picture_url: Optional[str] = None
+
+class MachinePictureResponse(BaseModel):
+    id: str
+    user_id: str
+    machine_position_id: str
+    direction: str
+    picture_url: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -114,12 +114,13 @@ export function AddComponentModal({ onAdd, onClose, machines }: AddComponentModa
             <input
               type="text"
               value={formData.componentName}
-              className="w-full rounded-lg border border-border bg-muted px-4 py-2.5 text-muted-foreground text-sm font-medium cursor-not-allowed"
-              disabled
-              placeholder="Auto-filled from Component ID"
+              onChange={(e) => setFormData({ ...formData, componentName: e.target.value })}
+              className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-foreground text-sm font-medium focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              required
+              placeholder="Enter component name or select Component ID to auto-fill"
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              Component Name is auto-filled when you select Component ID
+              Select Component ID to auto-fill, or type your own component name
             </p>
           </div>
 

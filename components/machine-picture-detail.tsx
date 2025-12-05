@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronLeft, Edit, Trash2, Plus, Upload } from "lucide-react"
 import type { Component, FailureItem, MachinePosition } from "./dashboard"
+import * as api from "@/lib/api"
 
 interface MachinePicture {
   id: string
@@ -23,33 +24,91 @@ export function MachinePictureDetail({ component, failureItem, position, onBack 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingPicture, setEditingPicture] = useState<MachinePicture | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Are you sure you want to delete this picture?")) return
-    setPictures(pictures.filter((p) => p.id !== id))
-  }
+  // Load pictures from API on mount
+  useEffect(() => {
+    loadPictures()
+  }, [position.id])
 
-  const handleAddPicture = (newPicture: Omit<MachinePicture, "id" | "createdDate">) => {
-    const picture: MachinePicture = {
-      id: `pic-${Date.now()}`,
-      ...newPicture,
-      createdDate: new Date().toLocaleDateString(),
+  const loadPictures = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await api.getMachinePictures(position.id)
+      // Map API response to local format
+      const mappedPictures: MachinePicture[] = data.map(p => ({
+        id: p.id,
+        direction: p.direction,
+        pictureUrl: p.picture_url,
+        createdDate: new Date(p.created_at).toLocaleDateString(),
+      }))
+      setPictures(mappedPictures)
+    } catch (err: any) {
+      console.error("Failed to load pictures:", err)
+      setError(err.message || "Failed to load pictures")
+    } finally {
+      setLoading(false)
     }
-    setPictures([...pictures, picture])
-    setShowAddModal(false)
   }
 
-  const handleEditPicture = (updatedData: Omit<MachinePicture, "id" | "createdDate">) => {
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this picture?")) return
+    try {
+      await api.deleteMachinePicture(id)
+      setPictures(pictures.filter((p) => p.id !== id))
+    } catch (err: any) {
+      console.error("Failed to delete picture:", err)
+      alert("Failed to delete picture: " + (err.message || "Unknown error"))
+    }
+  }
+
+  const handleAddPicture = async (newPicture: Omit<MachinePicture, "id" | "createdDate">) => {
+    try {
+      const created = await api.createMachinePicture({
+        machine_position_id: position.id,
+        direction: newPicture.direction,
+        picture_url: newPicture.pictureUrl,
+      })
+      const mappedPicture: MachinePicture = {
+        id: created.id,
+        direction: created.direction,
+        pictureUrl: created.picture_url,
+        createdDate: new Date(created.created_at).toLocaleDateString(),
+      }
+      setPictures([...pictures, mappedPicture])
+      setShowAddModal(false)
+    } catch (err: any) {
+      console.error("Failed to create picture:", err)
+      alert("Failed to create picture: " + (err.message || "Unknown error"))
+    }
+  }
+
+  const handleEditPicture = async (updatedData: Omit<MachinePicture, "id" | "createdDate">) => {
     if (!editingPicture) return
-    setPictures(
-      pictures.map((p) =>
-        p.id === editingPicture.id
-          ? { ...p, direction: updatedData.direction, pictureUrl: updatedData.pictureUrl }
-          : p
+    try {
+      const updated = await api.updateMachinePicture(editingPicture.id, {
+        direction: updatedData.direction,
+        picture_url: updatedData.pictureUrl,
+      })
+      setPictures(
+        pictures.map((p) =>
+          p.id === editingPicture.id
+            ? {
+                ...p,
+                direction: updated.direction,
+                pictureUrl: updated.picture_url,
+              }
+            : p
+        )
       )
-    )
-    setShowEditModal(false)
-    setEditingPicture(null)
+      setShowEditModal(false)
+      setEditingPicture(null)
+    } catch (err: any) {
+      console.error("Failed to update picture:", err)
+      alert("Failed to update picture: " + (err.message || "Unknown error"))
+    }
   }
 
   const handleEdit = (picture: MachinePicture) => {
@@ -113,7 +172,25 @@ export function MachinePictureDetail({ component, failureItem, position, onBack 
       </div>
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        {pictures.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <p className="text-muted-foreground text-base font-medium">Loading pictures...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <p className="text-destructive text-base font-medium">Error: {error}</p>
+              <button
+                onClick={loadPictures}
+                className="mt-2 px-4 py-2 rounded bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : pictures.length === 0 ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <p className="text-muted-foreground text-base font-medium">No pictures yet.</p>

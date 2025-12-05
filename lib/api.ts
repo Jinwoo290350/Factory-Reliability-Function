@@ -145,7 +145,11 @@ async function apiRequest<T>(
     throw new ApiError(response.status, errorMessage, errorDetails);
   }
 
-  // Handle empty responses
+  // Handle empty responses (e.g., 204 No Content from DELETE)
+  if (response.status === 204 || response.headers.get("content-length") === "0") {
+    return {} as T;
+  }
+
   const contentType = response.headers.get("content-type");
   if (contentType && contentType.includes("application/json")) {
     return response.json();
@@ -308,6 +312,118 @@ export async function uploadCSV(file: File): Promise<CsvUploadResponse> {
   }
 
   return response.json();
+}
+
+// ==================== Machine Position APIs ====================
+
+export interface MachinePosition {
+  id: string;
+  user_id: string;
+  failure_item_id: string;
+  position_name: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MachinePositionCreate {
+  failure_item_id: string;
+  position_name: string;
+  description?: string;
+}
+
+export async function getMachinePositions(failureItemId?: string): Promise<MachinePosition[]> {
+  const url = failureItemId ? `/machine-positions?failure_item_id=${failureItemId}` : "/machine-positions";
+  return apiRequest<MachinePosition[]>(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+}
+
+export async function getMachinePosition(id: string): Promise<MachinePosition> {
+  return apiRequest<MachinePosition>(`/machine-positions/${id}`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+}
+
+export async function createMachinePosition(data: MachinePositionCreate): Promise<MachinePosition> {
+  return apiRequest<MachinePosition>("/machine-positions", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateMachinePosition(id: string, data: Partial<MachinePositionCreate>): Promise<MachinePosition> {
+  return apiRequest<MachinePosition>(`/machine-positions/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteMachinePosition(id: string): Promise<void> {
+  return apiRequest<void>(`/machine-positions/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+}
+
+// ==================== Machine Picture APIs ====================
+
+export interface MachinePicture {
+  id: string;
+  user_id: string;
+  machine_position_id: string;
+  direction: string;
+  picture_url: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MachinePictureCreate {
+  machine_position_id: string;
+  direction: string;
+  picture_url: string;
+}
+
+export async function getMachinePictures(machinePositionId?: string): Promise<MachinePicture[]> {
+  const url = machinePositionId ? `/machine-pictures?machine_position_id=${machinePositionId}` : "/machine-pictures";
+  return apiRequest<MachinePicture[]>(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+}
+
+export async function getMachinePicture(id: string): Promise<MachinePicture> {
+  return apiRequest<MachinePicture>(`/machine-pictures/${id}`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+}
+
+export async function createMachinePicture(data: MachinePictureCreate): Promise<MachinePicture> {
+  return apiRequest<MachinePicture>("/machine-pictures", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateMachinePicture(id: string, data: Partial<MachinePictureCreate>): Promise<MachinePicture> {
+  return apiRequest<MachinePicture>(`/machine-pictures/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteMachinePicture(id: string): Promise<void> {
+  return apiRequest<void>(`/machine-pictures/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
 }
 
 // ==================== Health Check ====================

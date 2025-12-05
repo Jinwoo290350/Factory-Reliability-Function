@@ -10,7 +10,7 @@ load_dotenv()
 from utils.database import init_db
 
 # Import routers
-from routes import auth, machines, components, csv_upload, failure_items
+from routes import auth, machines, components, csv_upload, failure_items, machine_positions, machine_pictures
 
 # Create FastAPI app
 app = FastAPI(
@@ -40,6 +40,8 @@ app.include_router(machines.router)
 app.include_router(components.router)
 app.include_router(failure_items.router)
 app.include_router(csv_upload.router)
+app.include_router(machine_positions.router)
+app.include_router(machine_pictures.router)
 
 @app.on_event("startup")
 def on_startup():

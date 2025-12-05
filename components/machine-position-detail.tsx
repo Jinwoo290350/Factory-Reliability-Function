@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronLeft, Edit, Trash2, Plus, Image } from "lucide-react"
 import type { Component, FailureItem, MachinePosition } from "./dashboard"
+import * as api from "@/lib/api"
 
 interface MachinePositionDetailProps {
   component: Component
@@ -16,33 +17,91 @@ export function MachinePositionDetail({ component, failureItem, onBack, onNaviga
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingPosition, setEditingPosition] = useState<MachinePosition | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Are you sure you want to delete this position?")) return
-    setPositions(positions.filter((p) => p.id !== id))
-  }
+  // Load positions from API on mount
+  useEffect(() => {
+    loadPositions()
+  }, [failureItem.id])
 
-  const handleAddPosition = (newPosition: Omit<MachinePosition, "id" | "createdDate">) => {
-    const position: MachinePosition = {
-      id: `pos-${Date.now()}`,
-      ...newPosition,
-      createdDate: new Date().toLocaleDateString(),
+  const loadPositions = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await api.getMachinePositions(failureItem.id)
+      // Map API response to local format
+      const mappedPositions: MachinePosition[] = data.map(p => ({
+        id: p.id,
+        positionName: p.position_name,
+        description: p.description || "",
+        createdDate: new Date(p.created_at).toLocaleDateString(),
+      }))
+      setPositions(mappedPositions)
+    } catch (err: any) {
+      console.error("Failed to load positions:", err)
+      setError(err.message || "Failed to load positions")
+    } finally {
+      setLoading(false)
     }
-    setPositions([...positions, position])
-    setShowAddModal(false)
   }
 
-  const handleEditPosition = (updatedData: Omit<MachinePosition, "id" | "createdDate">) => {
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this position?")) return
+    try {
+      await api.deleteMachinePosition(id)
+      setPositions(positions.filter((p) => p.id !== id))
+    } catch (err: any) {
+      console.error("Failed to delete position:", err)
+      alert("Failed to delete position: " + (err.message || "Unknown error"))
+    }
+  }
+
+  const handleAddPosition = async (newPosition: Omit<MachinePosition, "id" | "createdDate">) => {
+    try {
+      const created = await api.createMachinePosition({
+        failure_item_id: failureItem.id,
+        position_name: newPosition.positionName,
+        description: newPosition.description || undefined,
+      })
+      const mappedPosition: MachinePosition = {
+        id: created.id,
+        positionName: created.position_name,
+        description: created.description || "",
+        createdDate: new Date(created.created_at).toLocaleDateString(),
+      }
+      setPositions([...positions, mappedPosition])
+      setShowAddModal(false)
+    } catch (err: any) {
+      console.error("Failed to create position:", err)
+      alert("Failed to create position: " + (err.message || "Unknown error"))
+    }
+  }
+
+  const handleEditPosition = async (updatedData: Omit<MachinePosition, "id" | "createdDate">) => {
     if (!editingPosition) return
-    setPositions(
-      positions.map((p) =>
-        p.id === editingPosition.id
-          ? { ...p, positionName: updatedData.positionName, description: updatedData.description }
-          : p
+    try {
+      const updated = await api.updateMachinePosition(editingPosition.id, {
+        position_name: updatedData.positionName,
+        description: updatedData.description || undefined,
+      })
+      setPositions(
+        positions.map((p) =>
+          p.id === editingPosition.id
+            ? {
+                ...p,
+                positionName: updated.position_name,
+                description: updated.description || "",
+              }
+            : p
+        )
       )
-    )
-    setShowEditModal(false)
-    setEditingPosition(null)
+      setShowEditModal(false)
+      setEditingPosition(null)
+    } catch (err: any) {
+      console.error("Failed to update position:", err)
+      alert("Failed to update position: " + (err.message || "Unknown error"))
+    }
   }
 
   const handleEdit = (position: MachinePosition) => {
@@ -106,7 +165,25 @@ export function MachinePositionDetail({ component, failureItem, onBack, onNaviga
       </div>
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        {positions.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <p className="text-muted-foreground text-base font-medium">Loading positions...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <p className="text-destructive text-base font-medium">Error: {error}</p>
+              <button
+                onClick={loadPositions}
+                className="mt-2 px-4 py-2 rounded bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : positions.length === 0 ? (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <p className="text-muted-foreground text-base font-medium">No positions yet.</p>

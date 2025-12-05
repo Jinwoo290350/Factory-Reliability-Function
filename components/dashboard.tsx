@@ -135,6 +135,17 @@ export function Dashboard() {
     }
   }
 
+  // Handle sidebar navigation - always reset to main page
+  const handleNavChange = (nav: string | null) => {
+    setActiveNav(nav)
+    setCurrentPage("main")
+    // Clear all selections when navigating via sidebar
+    setSelectedComponent(null)
+    setSelectedFailureItem(null)
+    setSelectedFailureMode(null)
+    setSelectedPosition(null)
+  }
+
   const renderContent = () => {
     switch (currentPage) {
       case "main":
@@ -207,7 +218,7 @@ export function Dashboard() {
       <DevBar components={components} setComponents={setComponents} onUploadSuccess={handleUploadSuccess} />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar activeNav={activeNav} setActiveNav={setActiveNav} />
+        <Sidebar activeNav={activeNav} setActiveNav={handleNavChange} />
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-auto">{renderContent()}</div>
         </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search } from "lucide-react"
+import { Search, Info, X } from "lucide-react"
 import type { Component } from "./dashboard"
 
 interface FailureListProps {
@@ -12,6 +12,13 @@ interface FailureListProps {
 export function FailureList({ data, onSelectComponent }: FailureListProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [showCount, setShowCount] = useState(10)
+  const [showFunctionsModal, setShowFunctionsModal] = useState(false)
+  const [selectedComponent, setSelectedComponent] = useState<Component | null>(null)
+
+  const handleShowFunctions = (component: Component) => {
+    setSelectedComponent(component)
+    setShowFunctionsModal(true)
+  }
 
   // Group components by machine name
   const groupedByMachine = data.reduce(
@@ -145,7 +152,11 @@ export function FailureList({ data, onSelectComponent }: FailureListProps) {
                             >
                               Failure Item
                             </button>
-                            <button className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-secondary/80 transition-all">
+                            <button
+                              onClick={() => handleShowFunctions(component)}
+                              className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-secondary/80 transition-all flex items-center gap-1"
+                            >
+                              <Info className="h-3.5 w-3.5" />
                               Functions
                             </button>
                           </div>
@@ -163,6 +174,64 @@ export function FailureList({ data, onSelectComponent }: FailureListProps) {
       {data.length > 0 && (
         <div className="mt-4 text-sm text-muted-foreground font-medium">
           Showing {filteredData.length} components from {machineNames.length} machines
+        </div>
+      )}
+
+      {/* Functions Info Modal */}
+      {showFunctionsModal && selectedComponent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowFunctionsModal(false)}>
+          <div className="bg-card border border-border rounded-lg p-5 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-foreground">Available Functions</h2>
+              <button
+                onClick={() => setShowFunctionsModal(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-secondary rounded"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2 p-2 rounded hover:bg-secondary/50">
+                <span className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 text-accent font-bold text-xs">1</span>
+                <span className="text-foreground">Failure Item Management</span>
+              </div>
+
+              <div className="flex items-center gap-2 p-2 rounded hover:bg-secondary/50">
+                <span className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 text-accent font-bold text-xs">2</span>
+                <span className="text-foreground">Failure Mode & Parameters</span>
+              </div>
+
+              <div className="flex items-center gap-2 p-2 rounded hover:bg-secondary/50">
+                <span className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 text-accent font-bold text-xs">3</span>
+                <span className="text-foreground">Risk Matrix Analysis</span>
+              </div>
+
+              <div className="flex items-center gap-2 p-2 rounded hover:bg-secondary/50">
+                <span className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 text-accent font-bold text-xs">4</span>
+                <span className="text-foreground">Weibull Graph Visualization</span>
+              </div>
+
+              <div className="flex items-center gap-2 p-2 rounded hover:bg-secondary/50">
+                <span className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 text-accent font-bold text-xs">5</span>
+                <span className="text-foreground">Machine Position Tracking</span>
+              </div>
+
+              <div className="flex items-center gap-2 p-2 rounded hover:bg-secondary/50">
+                <span className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 text-accent font-bold text-xs">6</span>
+                <span className="text-foreground">Machine Picture Gallery</span>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setShowFunctionsModal(false)}
+                className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

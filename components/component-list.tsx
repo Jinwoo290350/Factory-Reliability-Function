@@ -280,7 +280,7 @@ export function ComponentList({ data, setData, machines, onNavigateToMachines }:
 
       {data.length > 0 && (
         <div className="mt-4 text-sm text-muted-foreground font-medium">
-          Showing {filteredData.length} components from {machineNames.length} machines
+          Showing {Object.values(groupedByMachine).flat().length} unique components from {machineNames.length} machines
         </div>
       )}
 
@@ -374,11 +374,12 @@ function EditComponentModal({ component, machines, onSave, onClose }: EditCompon
             <input
               type="text"
               value={formData.componentName}
-              className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-muted-foreground cursor-not-allowed"
-              disabled
-              placeholder="Auto-filled from Component ID"
+              onChange={(e) => setFormData({ ...formData, componentName: e.target.value })}
+              className="w-full rounded-lg border border-border bg-input px-3 py-2 text-foreground font-medium focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              required
+              placeholder="Enter component name or select Component ID to auto-fill"
             />
-            <p className="mt-1 text-xs text-muted-foreground">Component Name is auto-filled when you select Component ID</p>
+            <p className="mt-1 text-xs text-muted-foreground">Select Component ID to auto-fill, or type your own component name</p>
           </div>
 
           {/* Machine Selection */}

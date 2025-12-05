@@ -26,6 +26,8 @@ class User(Base):
     failure_parameters = relationship("FailureParameter", back_populates="user", cascade="all, delete-orphan")
     csv_uploads = relationship("CsvUpload", back_populates="user", cascade="all, delete-orphan")
     reliability_results = relationship("ReliabilityResult", back_populates="user", cascade="all, delete-orphan")
+    machine_positions = relationship("MachinePosition", back_populates="user", cascade="all, delete-orphan")
+    machine_pictures = relationship("MachinePicture", back_populates="user", cascade="all, delete-orphan")
 
 
 class Machine(Base):
@@ -82,6 +84,7 @@ class FailureItem(Base):
     user = relationship("User", back_populates="failure_items")
     component = relationship("Component", back_populates="failure_items")
     parameters = relationship("FailureParameter", back_populates="failure_item", cascade="all, delete-orphan")
+    machine_positions = relationship("MachinePosition", back_populates="failure_item", cascade="all, delete-orphan")
 
 
 class FailureParameter(Base):
@@ -131,3 +134,36 @@ class ReliabilityResult(Base):
     # Relationships
     user = relationship("User", back_populates="reliability_results")
     component = relationship("Component", back_populates="reliability_results")
+
+
+class MachinePosition(Base):
+    __tablename__ = "machine_positions"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    failure_item_id = Column(String, ForeignKey("failure_items.id", ondelete="CASCADE"), nullable=False, index=True)
+    position_name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="machine_positions")
+    failure_item = relationship("FailureItem", back_populates="machine_positions")
+    machine_pictures = relationship("MachinePicture", back_populates="machine_position", cascade="all, delete-orphan")
+
+
+class MachinePicture(Base):
+    __tablename__ = "machine_pictures"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    machine_position_id = Column(String, ForeignKey("machine_positions.id", ondelete="CASCADE"), nullable=False, index=True)
+    direction = Column(String(100), nullable=False)
+    picture_url = Column(Text, nullable=False)  # Store base64 or file path
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="machine_pictures")
+    machine_position = relationship("MachinePosition", back_populates="machine_pictures")
