@@ -1,0 +1,125 @@
+Component,SupComponent,Failure mode,Failure hours
+Gear pump,Rotary joint,ELU,10080
+Gear pump,Rotary joint,ELU,1176
+Gear pump,Rotary joint,BRD,7992
+Gear pump,Rotary joint,BRD,896
+Gear pump,Rotary joint,BRD,112
+Gear pump,Rotary joint,ELP,13120
+Gear pump,Rotary joint,ELP,6040
+Gear pump,Rotary joint,ELP,2176
+Gear pump,Gear and bushing,BRD,2400
+Gear pump,Gear and bushing,BRD,18488
+Gear pump,Gear and bushing,BRD,4992
+Gear pump,Gear and bushing,BRD,656
+Gear pump,Gear and bushing,BRD,8
+Gear pump,Gear and bushing,BRD,168
+Gear pump,Gear and bushing,BRD,1640
+Gear pump,Gear and bushing,BRD,872
+Gear pump,Gear and bushing,BRD,416
+Gear pump,Gear and bushing,BRD,536
+Gear pump,Gear and bushing,STD,2400
+Gear pump,Gear and bushing,STD,18488
+Gear pump,Gear and bushing,STD,4992
+Gear pump,Gear and bushing,STD,664
+Gear pump,Gear and bushing,STD,168
+Gear pump,Gear and bushing,STD,1640
+Gear pump,Gear and bushing,STD,872
+Gear pump,Gear and bushing,STD,416
+Gear pump,Gear and bushing,STD,536
+Gear pump,Gear and bushing,SER,280
+Gear pump,Gear and bushing,NOI,192
+Gear pump,Gear and bushing,OHE,184
+Gear pump,Gear and bushing,UNK,3736
+Gear pump,Cooling system,PLU,9480
+Gear pump,Cooling system,PLU,10280
+Gear pump,Pressure transducer,PDE,28784
+Single screw extruder,Roller feed,SER,27080
+Single screw extruder,Roller feed,SER,768
+Single screw extruder,Roller feed,UNK,120
+Single screw extruder,Roller feed,OTH,768
+Gearbox,Gear and bushing,BRD,2310
+Gearbox,Gear and bushing,BRD,1802
+Gearbox,Gear and bushing,BRD,444
+Gearbox,Gear and bushing,PLU,22
+Gearbox,Gear and bushing,PLU,136
+Gearbox,Gear and bushing,PLU,26
+Gearbox,Gear and bushing,SER,22
+Gearbox,Gear and bushing,SER,136
+Gearbox,Gear and bushing,SER,26
+Gearbox,Gear and bushing,SER,2974
+Gearbox,Gear and bushing,SER,384
+Gearbox,Gear and bushing,SER,4
+Gearbox,Gear and bushing,STD,4
+Gearbox,Gear and bushing,STD,1799
+Gearbox,Gear and bushing,STD,444
+Gearbox,Gear and bushing,OHE,1476
+Gearbox,Gear and bushing,NOI,1799
+Gearbox,Gearbox housing,ELP,377
+Gearbox,Gearbox housing,ELP,593
+Gearbox,Radial shaft,BRD,2816
+Gearbox,Radial bearings,BRD,2692
+Gearbox,Lubrication system - Solenoid valve,BRD,2019
+Electric Cabinet,Power supply,FTS,5
+Electric Cabinet,Power supply,FTS,652
+Electric Cabinet,Power supply,SER,5
+Electric Cabinet,Inverter,BRD,1492
+Electric Cabinet,Inverter,BRD,6
+Electric Cabinet,Inverter,FTS,316
+Electric Cabinet,Inverter,FTS,1177
+Electric Cabinet,Inverter,FTS,6
+Electric Cabinet,Inverter,PDE,487
+Electric Cabinet,Inverter,PDE,6
+Electric Cabinet,Temperature Control (TUC),OHE,120
+Electric Cabinet,Temperature Control (TUC),OHE,229
+Electric Cabinet,Temperature Control (TUC),PDE,120
+Electric Cabinet,Temperature Control (TUC),PDE,229
+Electric Cabinet,Temperature Control (TUC),PDE,3145
+Electric Cabinet,Temperature Control (TUC),PDE,122
+Electric Cabinet,Temperature Control (TUC),PDE,366
+Electric Cabinet,Temperature Control (TUC),PDE,241
+Electric Cabinet,Temperature Control (TUC),PDE,304
+Electric Cabinet,Water pipe,BRD,7
+Electric Cabinet,Water pipe,BRD,14
+Electric Cabinet,Water pipe,BRD,45
+Electric Cabinet,Water pipe,STD,7
+Electric Cabinet,Water pipe,STD,14
+Electric Cabinet,Water pipe,STD,45
+Conveyor system,Conveyor,BRD,560
+Conveyor system,Conveyor,BRD,3408
+Conveyor system,Conveyor,BRD,1376
+Conveyor system,Conveyor,BRD,856
+Conveyor system,Conveyor,BRD,1960
+Conveyor system,Conveyor,BRD,3520
+Conveyor system,Conveyor,BRD,2368
+Conveyor system,Conveyor,SER,27656
+Conveyor system,Conveyor,SER,400
+Conveyor system,Conveyor,STD,14008
+Conveyor system,Conveyor,NOI,6120
+Conveyor system,Conveyor,NOI,3920
+Conveyor system,Conveyor,NOI,672
+Conveyor system,Roller shaft,BRD,120
+Conveyor system,Roller shaft,BRD,1592
+Conveyor system,Roller shaft,BRD,2816
+Conveyor system,Roller shaft,BRD,320
+Conveyor system,Roller shaft,BRD,1168
+Conveyor system,Roller shaft,BRD,600
+Conveyor system,Roller shaft,BRD,7328
+Conveyor system,Roller shaft,BRD,9376
+Conveyor system,Roller shaft,PLU,120
+Conveyor system,Roller shaft,PLU,1592
+Conveyor system,Roller shaft,PLU,12216
+Conveyor system,Roller shaft,STD,4296
+Conveyor system,Roller shaft,STD,600
+Cutter assembly,Cutter Knife,BRD,256
+Cutter assembly,Cutter Knife,BRD,797
+Cutter assembly,Cutter Knife,BRD,599
+Cutter assembly,Cutter Knife,ERO,797
+Cutter assembly,Cutter Knife,SER,51
+Cutter assembly,Cutter Knife,SER,66
+Cutter assembly,Cutter Knife,SER,130
+Cutter assembly,Cutter Knife,SER,15
+Cutter assembly,Cutter Knife,UNK,45
+Cutter assembly,Cutter Knife,STD,2
+Cutter assembly,Cutter Knife,STD,130
+Cutter assembly,Cutter Knife,STD,15
+Others,Switch & Push buttons,BRD,248

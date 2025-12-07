@@ -46,6 +46,7 @@ export interface Component {
   sub_component?: string;  // Fixed: was sup_component, should be sub_component
   failure_mode?: string;
   failure_hours?: number;
+  manual_hours?: number[];  // Array of manual failure hours for MLE calculation
   machine_id?: string;
   user_id: string;
   created_at: string;
@@ -63,6 +64,7 @@ export interface ComponentCreate {
   sub_component?: string;  // Fixed: was sup_component, should be sub_component
   failure_mode?: string;
   failure_hours?: number;
+  manual_hours?: number[];  // Array of manual failure hours for MLE calculation
   machine_id?: string;
 }
 

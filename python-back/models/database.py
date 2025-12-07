@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, Text, Index
+from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, Text, Index, JSON
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.sql import func
 import uuid
@@ -57,7 +57,8 @@ class Component(Base):
     component_name = Column(String(255), nullable=False)
     sub_component = Column(String(255), nullable=True)
     failure_mode = Column(String(255), nullable=True)
-    failure_hours = Column(Float, nullable=True)
+    failure_hours = Column(Float, nullable=True)  # Mean Time (MT) for default calculation
+    manual_hours = Column(JSON, nullable=True)  # Array of manual failure hours for MLE calculation
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

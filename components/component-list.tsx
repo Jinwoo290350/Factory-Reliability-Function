@@ -91,12 +91,20 @@ export function ComponentList({ data, setData, machines, onNavigateToMachines }:
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this component?")) return
+  const handleDelete = async (id: string, componentName: string) => {
+    // Get all components with the same componentName
+    const componentsToDelete = data.filter((c) => c.componentName === componentName)
+
+    const message = `Are you sure you want to delete "${componentName}"?\nThis will delete ${componentsToDelete.length} record(s) from the database.`
+    if (!confirm(message)) return
 
     try {
-      await deleteComponent(id)
-      setData(data.filter((c) => c.id !== id))
+      // Delete all components with this componentName
+      for (const comp of componentsToDelete) {
+        await deleteComponent(comp.id)
+      }
+      // Refresh list to get updated data
+      await fetchComponents()
     } catch (err) {
       console.error("Failed to delete component:", err)
       alert("Failed to delete component. Please try again.")
@@ -260,7 +268,7 @@ export function ComponentList({ data, setData, machines, onNavigateToMachines }:
                               Edit
                             </button>
                             <button
-                              onClick={() => handleDelete(component.id)}
+                              onClick={() => handleDelete(component.id, component.componentName)}
                               className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-semibold hover:bg-destructive/90 transition-all"
                             >
                               <Trash2 className="h-3.5 w-3.5" />

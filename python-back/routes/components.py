@@ -66,7 +66,8 @@ def create_component(
         component_name=component_data.component_name,
         sub_component=component_data.sub_component,
         failure_mode=component_data.failure_mode,
-        failure_hours=component_data.failure_hours
+        failure_hours=component_data.failure_hours,
+        manual_hours=component_data.manual_hours
     )
 
     db.add(component)

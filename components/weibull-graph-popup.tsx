@@ -10,29 +10,23 @@ interface WeibullGraphPopupProps {
 }
 
 export function WeibullGraphPopup({ failureMode, onClose }: WeibullGraphPopupProps) {
-  // Calculate Weibull parameters from MTBF (MT Hours)
-  const mtHours = parseFloat(failureMode.mtHours || "100")
-
-  // For demonstration, we'll use common Weibull parameters
-  // η (eta) scale parameter ≈ MTBF for β ≈ 1
-  // β (beta) shape parameter:
-  //   β < 1: decreasing failure rate (infant mortality)
-  //   β = 1: constant failure rate (exponential)
-  //   β > 1: increasing failure rate (wear-out)
-  const eta = mtHours * 1.2 // scale parameter
-  const beta = 1.5 // shape parameter (wear-out period)
+  // Use actual calculated Weibull parameters
+  // α (alpha) = shape parameter
+  // β (beta) = scale parameter (η in some notations)
+  const alpha = parseFloat(failureMode.alpha || "1.5") // shape
+  const betaScale = parseFloat(failureMode.beta || "100") // scale
 
   // Generate data points for Weibull curve
   const data = useMemo(() => {
-    const maxT = eta * 2 // Show up to 2x scale parameter
+    const maxT = betaScale * 2.5 // Show up to 2.5x scale parameter
     const points = []
     const numPoints = 100
 
     for (let i = 0; i <= numPoints; i++) {
       const t = (i / numPoints) * maxT
 
-      // Weibull reliability formula: R(t) = e^(-(t/η)^β)
-      const reliability = Math.exp(-Math.pow(t / eta, beta))
+      // Weibull reliability formula: R(t) = e^(-(t/β)^α)
+      const reliability = Math.exp(-Math.pow(t / betaScale, alpha))
 
       points.push({
         time: parseFloat(t.toFixed(2)),
@@ -41,11 +35,11 @@ export function WeibullGraphPopup({ failureMode, onClose }: WeibullGraphPopupPro
     }
 
     return points
-  }, [eta, beta])
+  }, [betaScale, alpha])
 
-  // Calculate current reliability marker position
+  // Calculate current reliability marker position (at t=1 hour)
   const currentReliability = parseFloat(failureMode.reliability || "0.99")
-  const currentTime = currentReliability > 0 ? eta * Math.pow(-Math.log(currentReliability), 1 / beta) : 0
+  const currentTime = currentReliability > 0 ? betaScale * Math.pow(-Math.log(currentReliability), 1 / alpha) : 0
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>

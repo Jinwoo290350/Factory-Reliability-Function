@@ -61,6 +61,7 @@ class ComponentCreate(BaseModel):
     sub_component: Optional[str] = None
     failure_mode: Optional[str] = None
     failure_hours: Optional[float] = None
+    manual_hours: Optional[List[float]] = None  # Array of manual failure hours
 
 class ComponentUpdate(BaseModel):
     machine_id: Optional[str] = None
@@ -70,6 +71,7 @@ class ComponentUpdate(BaseModel):
     sub_component: Optional[str] = None
     failure_mode: Optional[str] = None
     failure_hours: Optional[float] = None
+    manual_hours: Optional[List[float]] = None  # Array of manual failure hours
 
 class ComponentResponse(BaseModel):
     id: str
@@ -81,6 +83,7 @@ class ComponentResponse(BaseModel):
     sub_component: Optional[str]
     failure_mode: Optional[str]
     failure_hours: Optional[float]
+    manual_hours: Optional[List[float]]  # Array of manual failure hours
     created_at: datetime
     updated_at: datetime
 

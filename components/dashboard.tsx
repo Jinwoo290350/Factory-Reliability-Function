@@ -44,6 +44,10 @@ export interface FailureMode {
   mtHours?: string
   reliability?: string
   createdDate?: string
+  alpha?: string  // Weibull shape parameter
+  beta?: string   // Weibull scale parameter
+  manualHours?: number[]  // Manual failure hours array
+  componentId?: string  // Component ID for editing
 }
 
 export interface RiskData {
@@ -210,7 +214,7 @@ export function Dashboard() {
 
   const handleUploadSuccess = () => {
     // Refresh components and machines after successful CSV upload
-    window.location.reload()
+    // No need to reload page - data will refresh on next navigation
   }
 
   return (
