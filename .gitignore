@@ -48,6 +48,12 @@ Thumbs.db
 
 # Claude
 .claude
+history/
+
+# CSV Input Files & Uploads
+*_input_file_pattern.csv
+input_*.csv
+python-back/uploads/
 
 # Other
-/lib/generated/prisma 
+/lib/generated/prisma
