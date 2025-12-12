@@ -81,4 +81,8 @@ yarn-error.log*
 tmp/
 temp/
 *.tmp
-*.temp  
+*.temp
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
