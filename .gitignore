@@ -51,8 +51,8 @@ Thumbs.db
 
 # Claude
 .claude
+.history/
 history/
-
 # CSV Input Files & Uploads
 *_input_file_pattern.csv
 input_*.csv
@@ -70,3 +70,15 @@ yarn-error.log*
 
 # Other
 /lib/generated/prisma
+/.env.local
+/.env.development.local
+/.env.test.local
+/.env.production.local
+/.env.production    
+/.turbo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp  
