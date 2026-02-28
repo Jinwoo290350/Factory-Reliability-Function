@@ -2,218 +2,184 @@
 
 FastAPI backend for Factory Reliability Function application.
 
+**Production**: https://factory-reliability-function.onrender.com
+**Frontend**: https://factory-reliability-function.vercel.app
+
+## Stack
+
+- **Runtime**: Python 3.11
+- **Framework**: FastAPI + Uvicorn
+- **Database**: PostgreSQL (Neon) via SQLAlchemy
+- **Auth**: JWT (python-jose)
+- **Hosting**: Render.com (free tier)
+
 ## Features
 
-- **Authentication**: JWT-based user registration and login
-- **Machine Management**: CRUD operations for machines
-- **Component Management**: CRUD operations for components
-- **CSV Upload**: Bulk import machines and components from CSV files
-- **Reliability Analysis**: Weibull analysis, risk matrix, time-to-failure predictions (coming soon)
+- Authentication: JWT-based login
+- Machine Management: CRUD
+- Component Management: CRUD
+- CSV Upload: Bulk import
+- Failure Items & Parameters: CRUD
+- Machine Positions & Pictures: CRUD
+- Reliability Analysis: Weibull, risk matrix
 
-## Setup Instructions
+## Local Development
 
-### 1. Install Python Dependencies
+### 1. Clone and setup virtualenv
 
 ```bash
 cd python-back
+python3.11 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Or using virtual environment:
+### 2. Configure Environment Variables
+
+Copy `.env.example` to `.env` and fill in values:
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+cp .env.example .env
 ```
-
-### 2. Setup PostgreSQL Database
-
-Using Docker (recommended):
-
-```bash
-docker run --name factory-postgres \
-  -e POSTGRES_USER=factory \
-  -e POSTGRES_PASSWORD=devpassword \
-  -e POSTGRES_DB=factory_db \
-  -p 5432:5432 \
-  -d postgres:15
-```
-
-Or install PostgreSQL locally and create database:
-
-```sql
-CREATE DATABASE factory_db;
-CREATE USER factory WITH PASSWORD 'devpassword';
-GRANT ALL PRIVILEGES ON DATABASE factory_db TO factory;
-```
-
-### 3. Configure Environment Variables
-
-The `.env` file is already created. Update if needed:
 
 ```env
-DATABASE_URL=postgresql://factory:devpassword@localhost:5432/factory_db
-JWT_SECRET=your-secret-key-change-this-in-production
-UPLOAD_DIR=./uploads
+# Use Neon PostgreSQL (production)
+DATABASE_URL=postgresql://user:password@ep-xxx.neon.tech/neondb?sslmode=require
+
+# Or SQLite for quick local dev
+# DATABASE_URL=sqlite:///./factory.db
+
+JWT_SECRET=your-secret-key
+ALLOWED_ORIGINS=http://localhost:3000
 ```
 
-### 4. Run the Server
-
-```bash
-python app.py
-```
-
-Or using uvicorn directly:
+### 3. Run
 
 ```bash
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-The API will be available at:
-- **API**: http://localhost:8000
-- **Interactive Docs**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+API: http://localhost:8000
+Docs: http://localhost:8000/docs
+
+## Deployment (Render.com)
+
+### Environment Variables (set in Render Dashboard)
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Neon PostgreSQL connection string |
+| `JWT_SECRET` | Secret key for JWT tokens |
+| `ALLOWED_ORIGINS` | Frontend URL (Vercel) |
+| `PYTHON_VERSION` | `3.11.11` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | `10080` (7 days) |
+
+### Migrate data from SQLite to PostgreSQL
+
+```bash
+cd python-back
+# Set DATABASE_URL to Neon URL in .env first
+python3 migrate_sqlite_to_postgres.py
+```
+
+### Create admin user
+
+```bash
+cd python-back
+source venv/bin/activate
+python3 create_user.py
+```
 
 ## API Endpoints
 
-### Authentication
-
-- `POST /auth/register` - Register new user
-- `POST /auth/login` - Login and get JWT token
+### Auth
+- `POST /auth/register` - Register
+- `POST /auth/login` - Login → returns JWT token
 
 ### Machines
-
-- `GET /machines` - Get all machines
-- `POST /machines` - Create new machine
-- `GET /machines/{id}` - Get machine by ID
-- `PUT /machines/{id}` - Update machine
-- `DELETE /machines/{id}` - Delete machine
+- `GET /machines` - List all
+- `POST /machines` - Create
+- `GET /machines/{id}` - Get by ID
+- `PUT /machines/{id}` - Update
+- `DELETE /machines/{id}` - Delete
 
 ### Components
+- `GET /components` - List all (filter: `?machine_id=`)
+- `POST /components` - Create
+- `GET /components/{id}` - Get by ID
+- `PUT /components/{id}` - Update
+- `DELETE /components/{id}` - Delete
 
-- `GET /components` - Get all components (optional `?machine_id=`)
-- `POST /components` - Create new component
-- `GET /components/{id}` - Get component by ID
-- `PUT /components/{id}` - Update component
-- `DELETE /components/{id}` - Delete component
+### Failure Items
+- `GET /failure-items` - List
+- `POST /failure-items` - Create
+- `PUT /failure-items/{id}` - Update
+- `DELETE /failure-items/{id}` - Delete
 
 ### CSV Upload
-
-- `POST /csv/upload` - Upload and process CSV file
+- `POST /csv/upload` - Upload CSV file
 
 **CSV Format:**
 ```csv
 Machine,Component,SupComponent,Failure mode,Failure hours
 Compressor-1,Motor,Bearing,Wear,8760
-Compressor-1,Motor,Winding,Overheating,4380
 ```
 
-### Reliability Analysis (Coming Soon)
-
-- `POST /reliability/weibull` - Weibull analysis
-- `POST /reliability/risk-matrix` - Risk matrix calculation
-- `POST /reliability/time-to-failure` - Time to failure prediction
-
-## Database Schema
-
-The API uses PostgreSQL with SQLAlchemy ORM. Tables are automatically created on first run:
-
-- **users** - User accounts
-- **machines** - Factory machines
-- **components** - Machine components
-- **csv_uploads** - CSV upload tracking
-- **reliability_results** - Analysis results storage
+### Machine Positions & Pictures
+- `GET /machine-positions` - List
+- `POST /machine-positions` - Create
+- `GET /machine-pictures` - List
+- `POST /machine-pictures` - Upload
 
 ## Authentication
 
-All endpoints except `/auth/register` and `/auth/login` require authentication.
-
-Include JWT token in Authorization header:
+All endpoints except `/auth/register` and `/auth/login` require JWT token:
 
 ```
 Authorization: Bearer <your-token>
-```
-
-## Testing
-
-Test the API using the interactive docs at http://localhost:8000/docs
-
-Or using curl:
-
-```bash
-# Register
-curl -X POST http://localhost:8000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123","username":"Test User"}'
-
-# Login
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123"}'
-
-# Get machines (with token)
-curl http://localhost:8000/machines \
-  -H "Authorization: Bearer <your-token>"
 ```
 
 ## Project Structure
 
 ```
 python-back/
-├── app.py                 # Main FastAPI application
-├── requirements.txt       # Python dependencies
-├── .env                  # Environment variables
+├── app.py                      # FastAPI app entry point
+├── requirements.txt            # Dependencies
+├── Procfile                    # Render start command
+├── runtime.txt                 # Python 3.11.11
+├── render.yaml                 # Render config
+├── .env.example                # Env var template
+├── migrate_sqlite_to_postgres.py  # Migration script
+├── create_user.py              # Create admin user
 ├── models/
-│   ├── database.py       # SQLAlchemy models
-│   └── schemas.py        # Pydantic schemas
+│   ├── database.py             # SQLAlchemy ORM models
+│   └── schemas.py              # Pydantic schemas
 ├── routes/
-│   ├── auth.py           # Authentication endpoints
-│   ├── csv_upload.py     # CSV upload
-│   ├── machines.py       # Machine CRUD
-│   └── components.py     # Component CRUD
+│   ├── auth.py
+│   ├── machines.py
+│   ├── components.py
+│   ├── failure_items.py
+│   ├── csv_upload.py
+│   ├── machine_positions.py
+│   └── machine_pictures.py
 ├── services/
-│   ├── auth_service.py   # Authentication logic
-│   └── csv_processor.py  # CSV processing
-├── utils/
-│   ├── auth.py           # JWT utilities
-│   └── database.py       # Database connection
-└── uploads/              # User file storage
+│   ├── auth_service.py
+│   └── csv_processor.py
+└── utils/
+    ├── auth.py                 # JWT utilities
+    └── database.py             # DB connection (SQLite/PostgreSQL)
 ```
-
-## Next Steps
-
-1. Extract reliability calculation functions from System_reliability.ipynb
-2. Implement Weibull analysis endpoint
-3. Implement risk matrix endpoint
-4. Add unit tests
-5. Deploy to GCP Cloud Run
 
 ## Troubleshooting
 
-### Database connection error
+**App sleeps after 15 min inactivity (Render free tier)**
+- First request after sleep takes ~30 seconds (cold start)
+- Normal behavior on free tier
 
-Make sure PostgreSQL is running:
+**CORS error**
+- Check `ALLOWED_ORIGINS` in Render dashboard includes your Vercel URL
+- Format: `https://your-app.vercel.app` (no trailing slash)
 
-```bash
-docker ps  # Check if container is running
-docker logs factory-postgres  # Check logs
-```
-
-### Import errors
-
-Make sure you're in the python-back directory and dependencies are installed:
-
-```bash
-cd python-back
-pip install -r requirements.txt
-```
-
-### Port already in use
-
-Change the PORT in `.env` or stop the conflicting service:
-
-```bash
-lsof -i :8000  # Find process using port 8000
-kill -9 <PID>  # Kill the process
-```
+**Database connection error**
+- Verify `DATABASE_URL` in Render dashboard is the Neon PostgreSQL URL
+- Must start with `postgresql://` not `sqlite:///`
